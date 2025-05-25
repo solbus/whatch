@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
-    QPushButton, QHBoxLayout, QLineEdit, QDialog, QFormLayout, QMessageBox
+    QPushButton, QHBoxLayout, QLineEdit, QDialog, QFormLayout, QMessageBox,
+    QDateEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate
 from app.core.people_db import PeopleDB
 
 class PeopleMenu(QWidget):
@@ -26,8 +27,8 @@ class PeopleMenu(QWidget):
         layout.addWidget(title)
 
         # Table to display users
-        self.table = QTableWidget(0, 2)
-        self.table.setHorizontalHeaderLabels(["ID", "Name"])
+        self.table = QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["ID", "Name", "Birthday"])
         self.table.setSelectionBehavior(self.table.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(self.table.EditTrigger.NoEditTriggers)
         layout.addWidget(self.table)
@@ -61,16 +62,19 @@ class PeopleMenu(QWidget):
             self.table.insertRow(row_position)
             id_item = QTableWidgetItem(str(person[0]))
             name_item = QTableWidgetItem(person[1])
+            birthday_item = QTableWidgetItem(person[2] if person[2] else "")
             self.table.setItem(row_position, 0, id_item)
             self.table.setItem(row_position, 1, name_item)
+            self.table.setItem(row_position, 2, birthday_item)
         self.table.resizeColumnsToContents()
 
     def add_user(self):
         dialog = UserDialog()
         if dialog.exec() == QDialog.DialogCode.Accepted:
             name = dialog.name_field.text().strip()
+            birthday = dialog.birthday_field.date().toString("yyyy-MM-dd")
             if name:
-                self.db.add_person(name)
+                self.db.add_person(name, birthday)
                 self.load_people()
             else:
                 QMessageBox.warning(self, "Input Error", "Name cannot be empty.")
@@ -84,11 +88,13 @@ class PeopleMenu(QWidget):
         row = self.table.currentRow()
         user_id = int(self.table.item(row, 0).text())
         current_name = self.table.item(row, 1).text()
-        dialog = UserDialog(current_name)
+        current_birthday = self.table.item(row, 2).text()
+        dialog = UserDialog(current_name, current_birthday)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_name = dialog.name_field.text().strip()
+            new_birthday = dialog.birthday_field.date().toString("yyyy-MM-dd")
             if new_name:
-                self.db.update_person(user_id, new_name)
+                self.db.update_person(user_id, new_name, new_birthday)
                 self.load_people()
             else:
                 QMessageBox.warning(self, "Input Error", "Name cannot be empty.")
@@ -116,14 +122,21 @@ class PeopleMenu(QWidget):
         self.back_callback()
 
 class UserDialog(QDialog):
-    """A simple dialog to input a user’s name."""
-    def __init__(self, name="", parent=None):
+    """Dialog to input a user’s name and birthday."""
+    def __init__(self, name="", birthday="", parent=None):
         super().__init__(parent)
         self.setWindowTitle("User Details")
         self.setModal(True)
         self.name_field = QLineEdit(name)
+        self.birthday_field = QDateEdit()
+        self.birthday_field.setCalendarPopup(True)
+        if birthday:
+            self.birthday_field.setDate(QDate.fromString(birthday, "yyyy-MM-dd"))
+        else:
+            self.birthday_field.setDate(QDate.currentDate())
         form_layout = QFormLayout(self)
         form_layout.addRow("Name:", self.name_field)
+        form_layout.addRow("Birthday:", self.birthday_field)
 
         # OK and Cancel buttons
         button_layout = QHBoxLayout()
