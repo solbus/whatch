@@ -9,35 +9,38 @@ class WatchingDB:
 
     def create_table(self):
         query = """
-        CREATE TABLE IF NOT EXISTS watching (
+        CREATE TABLE IF NOT EXISTS series (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
-            type TEXT CHECK(type IN ('tv','film')) NOT NULL,
-            details TEXT,
-            last_watched INTEGER
+            data TEXT NOT NULL
         );
         """
         self.conn.execute(query)
         self.conn.commit()
 
-    def get_entries(self):
+    def add_series(self, info: dict):
+        """Store series info as a JSON string."""
+        json_data = json.dumps(info)
+        query = "INSERT INTO series (title, data) VALUES (?, ?)"
+        self.conn.execute(query, (info.get("title"), json_data))
+        self.conn.commit()
+
+    def get_series(self):
         cursor = self.conn.cursor()
-        cursor.execute("SELECT id, title, type, details, last_watched FROM watching")
-        return cursor.fetchall()
+        cursor.execute("SELECT id, title, data FROM series")
+        result = []
+        for row in cursor.fetchall():
+            series_id, title, data = row
+            result.append((series_id, title, json.loads(data)))
+        return result
 
-    def add_series(self, title, type_, details, last_watched):
-        details_json = json.dumps(details) if not isinstance(details, str) else details
-        query = (
-            "INSERT INTO watching (title, type, details, last_watched) "
-            "VALUES (?, ?, ?, ?)"
-        )
-        self.conn.execute(query, (title, type_, details_json, last_watched))
-        self.conn.commit()
-
-    def update_last_watched(self, entry_id, last_watched):
-        query = "UPDATE watching SET last_watched = ? WHERE id = ?"
-        self.conn.execute(query, (last_watched, entry_id))
-        self.conn.commit()
+    def reset_database(self):
+        self.conn.close()
+        import os
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+        self.conn = sqlite3.connect(self.db_path)
+        self.create_table()
 
     def close(self):
         self.conn.close()
