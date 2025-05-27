@@ -4,10 +4,10 @@ class PeopleDB:
     def __init__(self, db_path="whatch.db"):
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path)
-        self.create_table()
+        self.create_tables()
 
-    def create_table(self):
-        query = """
+    def create_tables(self):
+        people_query = """
         CREATE TABLE IF NOT EXISTS people (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -15,7 +15,16 @@ class PeopleDB:
             -- You can add more columns (e.g. email, preferences, etc.) as needed.
         );
         """
-        self.conn.execute(query)
+        self.conn.execute(people_query)
+
+        watching_query = """
+        CREATE TABLE IF NOT EXISTS watching (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            series TEXT NOT NULL,
+            progress INTEGER DEFAULT 0
+        );
+        """
+        self.conn.execute(watching_query)
         self.conn.commit()
 
         # If the table existed before the birthday column was introduced,
@@ -47,14 +56,35 @@ class PeopleDB:
         self.conn.execute(query, (person_id,))
         self.conn.commit()
 
+    def get_watching(self):
+        """Return a list of (id, series, progress) tuples."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, series, progress FROM watching")
+        return cursor.fetchall()
+
+    def add_series(self, series, progress=0):
+        query = "INSERT INTO watching (series, progress) VALUES (?, ?)"
+        self.conn.execute(query, (series, progress))
+        self.conn.commit()
+
+    def update_progress(self, series_id, progress):
+        query = "UPDATE watching SET progress = ? WHERE id = ?"
+        self.conn.execute(query, (progress, series_id))
+        self.conn.commit()
+
+    def delete_series(self, series_id):
+        query = "DELETE FROM watching WHERE id = ?"
+        self.conn.execute(query, (series_id,))
+        self.conn.commit()
+
     def reset_database(self):
-        """Delete all data and recreate the people table."""
+        """Delete all data and recreate the people and watching tables."""
         self.conn.close()
         import os
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
         self.conn = sqlite3.connect(self.db_path)
-        self.create_table()
+        self.create_tables()
 
     def close(self):
         self.conn.close()
