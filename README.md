@@ -19,8 +19,8 @@ python reset_db.py
 
 ## Watching section
 
-The **Watching** section lets you keep track of TV series you're currently following. From the main menu, click the TV icon to open the list of series. Use **Add Series** to record a new title and **Edit** to update your progress. Your progress is stored in the `watching` table alongside the `people` table.
+The **Watching** section lets you keep track of any shows or movies you are currently following. From the main menu, click the TV icon to open the list. Use **Add New** to record a title and **Update Progress** when you watch more. Items are stored in the `currently_watching` table with `id`, `title`, `type` and `progress` columns.
 
 ## Database reset
 
-Running `reset_db.py` now clears both the `people` and `watching` tables.
+Running `reset_db.py` deletes the database file so that the `people`, `watching` and `currently_watching` tables are recreated from scratch.
