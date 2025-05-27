@@ -1,5 +1,5 @@
 import sqlite3
-import json
+
 
 class WatchingDB:
     def __init__(self, db_path="whatch.db"):
@@ -9,38 +9,43 @@ class WatchingDB:
 
     def create_table(self):
         query = """
-        CREATE TABLE IF NOT EXISTS series (
+        CREATE TABLE IF NOT EXISTS watching (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
-            data TEXT NOT NULL
+            last_watched TEXT
         );
         """
         self.conn.execute(query)
         self.conn.commit()
 
-    def add_series(self, info: dict):
-        """Store series info as a JSON string."""
-        json_data = json.dumps(info)
-        query = "INSERT INTO series (title, data) VALUES (?, ?)"
-        self.conn.execute(query, (info.get("title"), json_data))
-        self.conn.commit()
+        # Ensure last_watched column exists (for migrations)
+        cursor = self.conn.execute("PRAGMA table_info(watching)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "last_watched" not in columns:
+            self.conn.execute(
+                "ALTER TABLE watching ADD COLUMN last_watched TEXT"
+            )
+            self.conn.commit()
 
     def get_series(self):
         cursor = self.conn.cursor()
-        cursor.execute("SELECT id, title, data FROM series")
-        result = []
-        for row in cursor.fetchall():
-            series_id, title, data = row
-            result.append((series_id, title, json.loads(data)))
-        return result
+        cursor.execute("SELECT id, title, last_watched FROM watching")
+        return cursor.fetchall()
 
-    def reset_database(self):
-        self.conn.close()
-        import os
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
-        self.conn = sqlite3.connect(self.db_path)
-        self.create_table()
+    def add_series(self, title, last_watched):
+        query = "INSERT INTO watching (title, last_watched) VALUES (?, ?)"
+        self.conn.execute(query, (title, last_watched))
+        self.conn.commit()
+
+    def update_last_watched(self, series_id, last_watched):
+        query = "UPDATE watching SET last_watched = ? WHERE id = ?"
+        self.conn.execute(query, (last_watched, series_id))
+        self.conn.commit()
+
+    def delete_series(self, series_id):
+        query = "DELETE FROM watching WHERE id = ?"
+        self.conn.execute(query, (series_id,))
+        self.conn.commit()
 
     def close(self):
         self.conn.close()
