@@ -27,3 +27,30 @@ def test_add_retrieve_delete(tmp_path):
         assert db.get_people() == []
     finally:
         db.close()
+
+
+def test_add_series_update_progress(tmp_path):
+    db_path = tmp_path / "test.db"
+    db = PeopleDB(db_path=str(db_path))
+    try:
+        # Initially watching table should be empty
+        assert db.get_watching() == []
+
+        # Add a series
+        db.add_series("Test Show")
+        shows = db.get_watching()
+        assert len(shows) == 1
+        show_id, title, progress = shows[0]
+        assert title == "Test Show"
+        assert progress == 0
+
+        # Update progress
+        db.update_progress(show_id, 5)
+        updated = db.get_watching()[0]
+        assert updated[2] == 5
+
+        # Delete the series and ensure table is empty again
+        db.delete_series(show_id)
+        assert db.get_watching() == []
+    finally:
+        db.close()

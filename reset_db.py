@@ -4,4 +4,4 @@ if __name__ == "__main__":
     db = PeopleDB()
     db.reset_database()
     db.close()
-    print("Database has been reset.")
+    print("Database tables 'people' and 'watching' have been reset.")
