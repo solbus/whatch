@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 
 
 class MainMenu(QWidget):
-    """Minimal main menu with a single button to open the People menu."""
+"""Minimal main menu with buttons to open other menus."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -23,6 +23,18 @@ class MainMenu(QWidget):
             alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft,
         )
 
+        self.watch_button = QPushButton("\U0001F4FA")  # Television icon
+        self.watch_button.setFixedSize(40, 40)
+        self.watch_button.setStyleSheet(
+            "font-size: 18px; border: none; background: transparent;"
+        )
+        self.watch_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.watch_button.clicked.connect(self.open_currently_watching_menu)
+        layout.addWidget(
+            self.watch_button,
+            alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft,
+        )
+
     def open_people_menu(self):
         main_window = self.window()
 
@@ -33,4 +45,15 @@ class MainMenu(QWidget):
 
         people_menu = PeopleMenu(back_callback=back_to_main_menu, parent=main_window)
         main_window.setCentralWidget(people_menu)
+
+    def open_currently_watching_menu(self):
+        main_window = self.window()
+
+        def back_to_main_menu():
+            main_window.setCentralWidget(MainMenu(parent=main_window))
+
+        from app.ui.currently_watching_menu import CurrentlyWatchingMenu
+
+        watching_menu = CurrentlyWatchingMenu(back_callback=back_to_main_menu, parent=main_window)
+        main_window.setCentralWidget(watching_menu)
 
