@@ -23,6 +23,18 @@ class MainMenu(QWidget):
             alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft,
         )
 
+        self.watching_button = QPushButton("\U0001F4F9")  # Unicode video camera
+        self.watching_button.setFixedSize(40, 40)
+        self.watching_button.setStyleSheet(
+            "font-size: 18px; border: none; background: transparent;"
+        )
+        self.watching_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.watching_button.clicked.connect(self.open_currently_watching_menu)
+        layout.addWidget(
+            self.watching_button,
+            alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft,
+        )
+
     def open_people_menu(self):
         main_window = self.window()
 
@@ -33,4 +45,15 @@ class MainMenu(QWidget):
 
         people_menu = PeopleMenu(back_callback=back_to_main_menu, parent=main_window)
         main_window.setCentralWidget(people_menu)
+
+    def open_currently_watching_menu(self):
+        main_window = self.window()
+
+        def back_to_main_menu():
+            main_window.setCentralWidget(MainMenu(parent=main_window))
+
+        from app.ui.currently_watching_menu import CurrentlyWatchingMenu
+
+        menu = CurrentlyWatchingMenu(items=[], back_callback=back_to_main_menu, parent=main_window)
+        main_window.setCentralWidget(menu)
 
