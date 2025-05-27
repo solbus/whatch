@@ -2,49 +2,52 @@ import sqlite3
 
 
 class WatchingDB:
+    """Database helper for the "Currently Watching" list."""
+
     def __init__(self, db_path="whatch.db"):
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path)
         self.create_table()
 
     def create_table(self):
+        """Create the table used to store currently watching items."""
         query = """
-        CREATE TABLE IF NOT EXISTS watching (
+        CREATE TABLE IF NOT EXISTS currently_watching (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
-            last_watched TEXT
+            type TEXT NOT NULL,
+            progress TEXT
         );
         """
         self.conn.execute(query)
         self.conn.commit()
 
-        # Ensure last_watched column exists (for migrations)
-        cursor = self.conn.execute("PRAGMA table_info(watching)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if "last_watched" not in columns:
-            self.conn.execute(
-                "ALTER TABLE watching ADD COLUMN last_watched TEXT"
-            )
-            self.conn.commit()
-
-    def get_series(self):
+    def get_items(self):
+        """Return a list of (id, title, type, progress) tuples."""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT id, title, last_watched FROM watching")
+        cursor.execute(
+            "SELECT id, title, type, progress FROM currently_watching"
+        )
         return cursor.fetchall()
 
-    def add_series(self, title, last_watched):
-        query = "INSERT INTO watching (title, last_watched) VALUES (?, ?)"
-        self.conn.execute(query, (title, last_watched))
+    def add_item(self, title, type_, progress):
+        """Insert a new item into the currently watching table."""
+        query = (
+            "INSERT INTO currently_watching (title, type, progress) VALUES (?, ?, ?)"
+        )
+        self.conn.execute(query, (title, type_, progress))
         self.conn.commit()
 
-    def update_last_watched(self, series_id, last_watched):
-        query = "UPDATE watching SET last_watched = ? WHERE id = ?"
-        self.conn.execute(query, (last_watched, series_id))
+    def update_progress(self, item_id, progress):
+        """Update the progress for an item."""
+        query = "UPDATE currently_watching SET progress = ? WHERE id = ?"
+        self.conn.execute(query, (progress, item_id))
         self.conn.commit()
 
-    def delete_series(self, series_id):
-        query = "DELETE FROM watching WHERE id = ?"
-        self.conn.execute(query, (series_id,))
+    def delete_item(self, item_id):
+        """Delete an item from the list."""
+        query = "DELETE FROM currently_watching WHERE id = ?"
+        self.conn.execute(query, (item_id,))
         self.conn.commit()
 
     def close(self):
