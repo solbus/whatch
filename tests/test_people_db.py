@@ -15,11 +15,12 @@ def test_add_retrieve_delete(tmp_path):
         assert db.get_people() == []
 
         # Add a person
-        db.add_person("Alice")
+        db.add_person("Alice", "1990-01-01")
         people = db.get_people()
         assert len(people) == 1
-        person_id, name = people[0]
+        person_id, name, birthday = people[0]
         assert name == "Alice"
+        assert birthday == "1990-01-01"
 
         # Delete the person and ensure database is empty again
         db.delete_person(person_id)

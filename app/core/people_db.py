@@ -2,6 +2,7 @@ import sqlite3
 
 class PeopleDB:
     def __init__(self, db_path="whatch.db"):
+        self.db_path = db_path
         self.conn = sqlite3.connect(db_path)
         self.create_table()
 
@@ -45,6 +46,15 @@ class PeopleDB:
         query = "DELETE FROM people WHERE id = ?"
         self.conn.execute(query, (person_id,))
         self.conn.commit()
+
+    def reset_database(self):
+        """Delete all data and recreate the people table."""
+        self.conn.close()
+        import os
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+        self.conn = sqlite3.connect(self.db_path)
+        self.create_table()
 
     def close(self):
         self.conn.close()

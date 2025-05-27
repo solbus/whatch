@@ -10,3 +10,9 @@ Install the dependencies and run the application:
 pip install -r requirements.txt
 python main.py
 ```
+
+To reset all user data, run:
+
+```bash
+python reset_db.py
+```
