@@ -199,6 +199,76 @@ def _parse_series_index_values(series_index):
     return values
 
 
+def _parse_air_datetime_value(air_datetime):
+    if not air_datetime:
+        return None
+    try:
+        return datetime.strptime(air_datetime, "%Y-%m-%d %H:%M")
+    except ValueError:
+        return None
+
+
+def _format_air_datetime_display(air_dt, include_time=True, include_year=True):
+    if not air_dt:
+        return ""
+    if include_year:
+        date_text = air_dt.strftime("%d-%b-%Y")
+    else:
+        date_text = air_dt.strftime("%d-%b")
+    if include_time:
+        return f"{date_text} {air_dt.strftime('%H:%M')}"
+    return date_text
+
+
+def _format_last_aired_dates(air_dates):
+    if not air_dates:
+        return ""
+    if len(air_dates) == 1:
+        return _format_air_datetime_display(air_dates[0], include_time=False, include_year=True)
+    if len(air_dates) == 2:
+        older, newer = air_dates
+        older_has_year = older.year != newer.year
+        return (
+            f"{_format_air_datetime_display(older, include_time=False, include_year=older_has_year)} & "
+            f"{_format_air_datetime_display(newer, include_time=False, include_year=True)}"
+        )
+
+    older, newer, newest = air_dates[-3:]
+    older_has_year = older.year != newer.year
+    newer_has_year = newer.year != newest.year
+    return (
+        f"{_format_air_datetime_display(older, include_time=False, include_year=older_has_year)}, "
+        f"{_format_air_datetime_display(newer, include_time=False, include_year=newer_has_year)}, & "
+        f"{_format_air_datetime_display(newest, include_time=False, include_year=True)}"
+    )
+
+
+def _build_show_air_notes(tv_items, now=None):
+    if now is None:
+        now = datetime.now()
+    by_show = defaultdict(list)
+    for item in tv_items:
+        show_title = item[5] or "Unknown Show"
+        is_placeholder = bool(item[9])
+        air_dt = _parse_air_datetime_value(item[10])
+        if not is_placeholder or not air_dt:
+            continue
+        by_show[show_title].append(air_dt)
+
+    notes = {}
+    for show_title, datetimes in by_show.items():
+        datetimes = sorted(datetimes)
+        past = [dt for dt in datetimes if dt <= now]
+        if past:
+            notes[show_title] = f"Last aired {_format_last_aired_dates(past[-3:])}"
+            continue
+        upcoming = [dt for dt in datetimes if dt > now]
+        if not upcoming:
+            continue
+        notes[show_title] = f"Next airs {_format_air_datetime_display(upcoming[0])}"
+    return notes
+
+
 def _extract_tv_episode_parts(path):
     name = os.path.splitext(os.path.basename(path))[0]
     strict_pattern = (
@@ -1372,6 +1442,7 @@ class LibraryMenu(QWidget):
                 self._add_movie_item(movies_root, payload)
             else:
                 series_node = QTreeWidgetItem([title, "", "", "", "", ""])
+                self._set_title_bold(series_node)
                 self._apply_row_height(series_node)
                 movies_root.addChild(series_node)
                 entries = sorted(
@@ -1383,12 +1454,14 @@ class LibraryMenu(QWidget):
 
         tv_items = [item for item in items if item[2] == "TV"]
         by_show = defaultdict(list)
+        show_notes = _build_show_air_notes(tv_items)
         for item in tv_items:
             show_title = item[5] or "Unknown Show"
             by_show[show_title].append(item)
 
         for show_title in sorted(by_show.keys(), key=self._title_sort_key):
-            show_item = QTreeWidgetItem([show_title, "", "", "", "", ""])
+            show_item = QTreeWidgetItem([show_title, "", "", "", show_notes.get(show_title, ""), ""])
+            self._set_title_bold(show_item)
             self._apply_row_height(show_item)
             tv_root.addChild(show_item)
             by_season = defaultdict(list)
@@ -1454,7 +1527,9 @@ class LibraryMenu(QWidget):
         title = self._format_title(display_title)
         notes = self._format_notes(air_datetime, is_placeholder)
         watched_mark = self._format_watched(watched)
-        node = QTreeWidgetItem([title, "", watched_mark, show_title or "", notes, path])
+        path_text = "" if is_placeholder else path
+        node = QTreeWidgetItem([title, "", watched_mark, show_title or "", notes, path_text])
+        self._set_title_bold(node)
         node.setData(0, Qt.ItemDataRole.UserRole, {"path": path, "is_placeholder": bool(is_placeholder)})
         self._apply_row_height(node)
         parent.addChild(node)
@@ -1481,7 +1556,8 @@ class LibraryMenu(QWidget):
         title = self._format_title(display_title)
         notes = self._format_notes(air_datetime, is_placeholder)
         watched_mark = self._format_watched(watched)
-        node = QTreeWidgetItem([title, "", watched_mark, show_title or "", notes, path])
+        path_text = "" if is_placeholder else path
+        node = QTreeWidgetItem([title, "", watched_mark, show_title or "", notes, path_text])
         node.setData(0, Qt.ItemDataRole.UserRole, {"path": path, "is_placeholder": bool(is_placeholder)})
         self._apply_row_height(node)
         parent.addChild(node)
@@ -1499,7 +1575,16 @@ class LibraryMenu(QWidget):
     def _format_notes(self, air_datetime, is_placeholder):
         if not is_placeholder or not air_datetime:
             return ""
-        return f"Airs {air_datetime}"
+        air_dt = _parse_air_datetime_value(air_datetime)
+        if not air_dt:
+            return ""
+        label = "Aired" if air_dt <= datetime.now() else "Airs"
+        return f"{label} {_format_air_datetime_display(air_dt)}"
+
+    def _set_title_bold(self, item):
+        font = item.font(0)
+        font.setBold(True)
+        item.setFont(0, font)
 
     def _apply_row_height(self, item):
         item.setSizeHint(0, QSize(0, self._row_height))
