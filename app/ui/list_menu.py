@@ -15,13 +15,13 @@ from PyQt6.QtWidgets import (
     QDateTimeEdit,
     QDialog,
     QDialogButtonBox,
-    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QSizePolicy,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -966,7 +966,8 @@ class ListMenu(QWidget):
         layout = QVBoxLayout(self)
         self.do_list_button = QPushButton("DO A LIST")
         self.do_list_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.do_list_button.setMinimumHeight(64)
+        self.do_list_button.setMinimumHeight(56)
+        self.do_list_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.do_list_button.setStyleSheet(
             """
             QPushButton {
@@ -980,13 +981,8 @@ class ListMenu(QWidget):
             QPushButton:hover { padding-top: 8px; padding-bottom: 12px; }
             """
         )
-        glow = QGraphicsDropShadowEffect(self)
-        glow.setBlurRadius(24)
-        glow.setOffset(0, 6)
-        glow.setColor(QColor("#17a589"))
-        self.do_list_button.setGraphicsEffect(glow)
         self.do_list_button.clicked.connect(self._start_do_list)
-        layout.addWidget(self.do_list_button)
+        layout.addWidget(self.do_list_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self._do_list_anim_timer = QTimer(self)
         self._do_list_anim_timer.timeout.connect(self._animate_do_list_button)
@@ -1121,14 +1117,13 @@ class ListMenu(QWidget):
         self.do_list_button.setVisible(not is_collecting)
         self.mode_status_label.setVisible(bool(is_collecting))
         self.done_button.setVisible(bool(is_collecting))
+        self.tree.header().showSection(0)
         if is_collecting:
             self.mode_status_label.setText(self._do_list_status_text())
             self.tree.setColumnWidth(0, 56)
-            self.tree.header().showSection(0)
         else:
             self.mode_status_label.setText("")
-            self.tree.setColumnWidth(0, 0)
-            self.tree.header().hideSection(0)
+            self.tree.setColumnWidth(0, 22)
         self._auto_resize_columns()
 
     def _current_participant(self):
@@ -1349,7 +1344,7 @@ class ListMenu(QWidget):
         if self._do_list_state and self._do_list_state.get("phase") == "collecting":
             self.tree.setColumnWidth(0, 56)
         else:
-            self.tree.setColumnWidth(0, 0)
+            self.tree.setColumnWidth(0, 22)
 
     def _on_header_double_click(self, section):
         if section == 1:
@@ -1427,6 +1422,8 @@ class ListMenu(QWidget):
 
         movies_root = QTreeWidgetItem(["", "Movies", "", "", "", ""])
         tv_root = QTreeWidgetItem(["", "TV Shows", "", "", "", ""])
+        movies_root.setChildIndicatorPolicy(QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator)
+        tv_root.setChildIndicatorPolicy(QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator)
         self._apply_row_height(movies_root)
         self._apply_row_height(tv_root)
         self.tree.addTopLevelItem(movies_root)

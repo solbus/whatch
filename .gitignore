@@ -75,6 +75,7 @@ venv/
 ENV/
 env/
 venv.bak/
+.venv/
 
 # Database
 whatch.db
