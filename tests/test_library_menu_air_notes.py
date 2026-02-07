@@ -4,7 +4,7 @@ from datetime import datetime
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from app.ui.library_menu import (  # noqa: E402
+from app.ui.library_utils import (  # noqa: E402
     _build_show_air_notes,
     _format_air_datetime_display,
     _format_last_aired_dates,

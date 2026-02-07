@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QFontMetrics
 
 
 class MainMenu(QWidget):
@@ -11,41 +12,40 @@ class MainMenu(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
 
-        self.watching_button = QPushButton("Watching")
-        self.watching_button.setFixedSize(80, 40)
-        self.watching_button.setStyleSheet(
-            "font-size: 18px; border: none; background: transparent;"
-        )
-        self.watching_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.watching_button.clicked.connect(self.open_watching_menu)
-        layout.addWidget(
-            self.watching_button,
-            alignment=Qt.AlignmentFlag.AlignHCenter,
-        )
+        labels = ["Watching", "List", "Library", "People"]
+        menu_font = QFont(self.font())
+        menu_font.setPixelSize(18)
+        metrics = QFontMetrics(menu_font)
+        button_width = max(metrics.horizontalAdvance(label) for label in labels) + 12
 
-        self.library_button = QPushButton("Library")
-        self.library_button.setFixedSize(80, 40)
-        self.library_button.setStyleSheet(
-            "font-size: 18px; border: none; background: transparent;"
+        self.watching_button = self._build_menu_button(
+            "Watching", button_width, menu_font, self.open_watching_menu
         )
-        self.library_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.library_button.clicked.connect(self.open_library_menu)
-        layout.addWidget(
-            self.library_button,
-            alignment=Qt.AlignmentFlag.AlignHCenter,
-        )
+        layout.addWidget(self.watching_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        self.people_button = QPushButton("People")
-        self.people_button.setFixedSize(80, 40)
-        self.people_button.setStyleSheet(
-            "font-size: 18px; border: none; background: transparent;"
+        self.list_button = self._build_menu_button("List", button_width, menu_font, self.open_list_menu)
+        layout.addWidget(self.list_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.library_button = self._build_menu_button(
+            "Library", button_width, menu_font, self.open_library_menu
         )
-        self.people_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.people_button.clicked.connect(self.open_people_menu)
-        layout.addWidget(
-            self.people_button,
-            alignment=Qt.AlignmentFlag.AlignHCenter,
+        layout.addWidget(self.library_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.people_button = self._build_menu_button(
+            "People", button_width, menu_font, self.open_people_menu
         )
+        layout.addWidget(self.people_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+    def _build_menu_button(self, text, width, font, on_click):
+        button = QPushButton(text)
+        button.setFixedSize(width, 40)
+        button.setFont(font)
+        button.setStyleSheet(
+            "border: none; background: transparent; text-align: left; padding-left: 0px;"
+        )
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.clicked.connect(on_click)
+        return button
 
     def open_people_menu(self):
         main_window = self.window()
@@ -81,4 +81,15 @@ class MainMenu(QWidget):
 
         library_menu = LibraryMenu(back_callback=back_to_main_menu, parent=main_window)
         main_window.setCentralWidget(library_menu)
+
+    def open_list_menu(self):
+        main_window = self.window()
+
+        def back_to_main_menu():
+            main_window.setCentralWidget(MainMenu(parent=main_window))
+
+        from app.ui.list_menu import ListMenu
+
+        list_menu = ListMenu(back_callback=back_to_main_menu, parent=main_window)
+        main_window.setCentralWidget(list_menu)
 
