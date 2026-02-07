@@ -21,6 +21,12 @@ def test_add_retrieve_delete(tmp_path):
         person_id, name, birthday = people[0]
         assert name == "Alice"
         assert birthday == "1990-01-01"
+        people_with_stats = db.get_people_with_stats()
+        assert people_with_stats[0][3] == 0
+
+        db.increment_list_last_pick_count(person_id)
+        people_with_stats = db.get_people_with_stats()
+        assert people_with_stats[0][3] == 1
 
         # Delete the person and ensure database is empty again
         db.delete_person(person_id)

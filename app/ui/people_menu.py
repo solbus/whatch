@@ -27,8 +27,8 @@ class PeopleMenu(QWidget):
         layout.addWidget(title)
 
         # Table to display users
-        self.table = QTableWidget(0, 3)
-        self.table.setHorizontalHeaderLabels(["ID", "Name", "Birthday"])
+        self.table = QTableWidget(0, 4)
+        self.table.setHorizontalHeaderLabels(["ID", "Name", "Birthday", "Final Picks"])
         self.table.setSelectionBehavior(self.table.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(self.table.EditTrigger.NoEditTriggers)
         layout.addWidget(self.table)
@@ -55,7 +55,7 @@ class PeopleMenu(QWidget):
 
     def load_people(self):
         """Fetch people from the database and load them into the table."""
-        people = self.db.get_people()
+        people = self.db.get_people_with_stats()
         self.table.setRowCount(0)
         for person in people:
             row_position = self.table.rowCount()
@@ -63,9 +63,11 @@ class PeopleMenu(QWidget):
             id_item = QTableWidgetItem(str(person[0]))
             name_item = QTableWidgetItem(person[1])
             birthday_item = QTableWidgetItem(person[2] if person[2] else "")
+            final_pick_item = QTableWidgetItem(str(person[3] if person[3] is not None else 0))
             self.table.setItem(row_position, 0, id_item)
             self.table.setItem(row_position, 1, name_item)
             self.table.setItem(row_position, 2, birthday_item)
+            self.table.setItem(row_position, 3, final_pick_item)
         self.table.resizeColumnsToContents()
 
     def add_user(self):

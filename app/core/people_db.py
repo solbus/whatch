@@ -11,7 +11,8 @@ class PeopleDB:
         CREATE TABLE IF NOT EXISTS people (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            birthday TEXT
+            birthday TEXT,
+            list_last_pick_count INTEGER DEFAULT 0
             -- You can add more columns (e.g. email, preferences, etc.) as needed.
         );
         """
@@ -34,11 +35,26 @@ class PeopleDB:
         if "birthday" not in columns:
             self.conn.execute("ALTER TABLE people ADD COLUMN birthday TEXT")
             self.conn.commit()
+        if "list_last_pick_count" not in columns:
+            self.conn.execute("ALTER TABLE people ADD COLUMN list_last_pick_count INTEGER DEFAULT 0")
+            self.conn.execute("UPDATE people SET list_last_pick_count = COALESCE(list_last_pick_count, 0)")
+            self.conn.commit()
 
     def get_people(self):
         """Return a list of (id, name, birthday) tuples."""
         cursor = self.conn.cursor()
         cursor.execute("SELECT id, name, birthday FROM people")
+        return cursor.fetchall()
+
+    def get_people_with_stats(self):
+        """Return a list of (id, name, birthday, list_last_pick_count) tuples."""
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, name, birthday, COALESCE(list_last_pick_count, 0)
+            FROM people
+            """
+        )
         return cursor.fetchall()
 
     def add_person(self, name, birthday):
@@ -53,6 +69,15 @@ class PeopleDB:
 
     def delete_person(self, person_id):
         query = "DELETE FROM people WHERE id = ?"
+        self.conn.execute(query, (person_id,))
+        self.conn.commit()
+
+    def increment_list_last_pick_count(self, person_id):
+        query = """
+        UPDATE people
+        SET list_last_pick_count = COALESCE(list_last_pick_count, 0) + 1
+        WHERE id = ?
+        """
         self.conn.execute(query, (person_id,))
         self.conn.commit()
 
